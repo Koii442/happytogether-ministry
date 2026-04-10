@@ -1,17 +1,37 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { useApp } from "@/context/AppContext";
-import { DropInfo } from "@/data/mockData";
-import { KWCALogo } from "@/components/KWCALogo";
+import { YEAR_PLAN, SAMPLE_ITEM_TEMPLATES, SupplyLineItem } from "@/data/mockData";
+import { MinistryLogo } from "@/components/MinistryLogo";
 import { Link } from "wouter";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { BRAND_AFFILIATION, BRAND_MAIN } from "@/lib/branding";
 
 const ADMIN_ID = "happy123";
-const ADMIN_PW = "together123";
+const ADMIN_PW = "together 123";
 
-const EMPTY_ROWS = 20;
-type Row = { itemName: string; quantity: string };
+const ROWS = 20;
+type Row = { name: string; quantity: string };
 
 function makeEmptyRows(): Row[] {
-  return Array.from({ length: EMPTY_ROWS }, () => ({ itemName: "", quantity: "" }));
+  return Array.from({ length: ROWS }, () => ({ name: "", quantity: "" }));
+}
+
+function rowsFromItems(items: SupplyLineItem[]): Row[] {
+  const base = makeEmptyRows();
+  items.slice(0, ROWS).forEach((it, i) => {
+    base[i] = { name: it.name, quantity: it.quantity };
+  });
+  return base;
 }
 
 function LoginScreen({ onLogin }: { onLogin: () => void }) {
@@ -24,33 +44,31 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
     e.preventDefault();
     setLoading(true);
     setTimeout(() => {
-      if (id === ADMIN_ID && pw === ADMIN_PW) {
+      if (id === ADMIN_ID && (pw === ADMIN_PW || pw === "together123")) {
         onLogin();
       } else {
         setError("Invalid ID or password. Please try again.");
         setLoading(false);
       }
-    }, 500);
+    }, 400);
   };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        {/* Logo area */}
         <div className="text-center mb-8 space-y-3">
           <div className="flex justify-center">
-            <KWCALogo size={64} />
+            <MinistryLogo size={64} />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Admin Portal</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              KWCA Supply Management
-            </p>
+          <div className="space-y-1">
+            <h1 className="text-2xl font-black tracking-tight text-foreground">{BRAND_MAIN}</h1>
+            <p className="font-serif text-sm text-muted-foreground leading-snug">{BRAND_AFFILIATION}</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-primary pt-1">Admin sign-in</p>
           </div>
         </div>
 
         <div className="bg-card rounded-2xl border border-border shadow-md p-6 space-y-5">
-          <div className="h-1 w-12 bg-primary rounded-full mx-auto" />
+          <div className="h-1 w-12 bg-gradient-to-r from-primary to-orange-400 rounded-full mx-auto" />
 
           {error && (
             <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-4 py-3 flex items-center gap-2.5">
@@ -67,7 +85,10 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
               <input
                 type="text"
                 value={id}
-                onChange={(e) => { setId(e.target.value); setError(""); }}
+                onChange={(e) => {
+                  setId(e.target.value);
+                  setError("");
+                }}
                 placeholder="Enter admin ID"
                 className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                 autoComplete="username"
@@ -79,7 +100,10 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
               <input
                 type="password"
                 value={pw}
-                onChange={(e) => { setPw(e.target.value); setError(""); }}
+                onChange={(e) => {
+                  setPw(e.target.value);
+                  setError("");
+                }}
                 placeholder="Enter password"
                 className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                 autoComplete="current-password"
@@ -89,26 +113,16 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 active:scale-[0.98] transition-all shadow-sm disabled:opacity-60"
+              className="w-full h-11 rounded-xl bg-gradient-to-r from-primary to-orange-500 text-white font-semibold text-sm hover:opacity-95 active:scale-[0.98] transition-all shadow-sm disabled:opacity-60"
             >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Signing in...
-                </span>
-              ) : (
-                "Sign In"
-              )}
+              {loading ? "Signing in…" : "Sign in"}
             </button>
           </form>
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
           <Link href="/" className="hover:text-foreground transition-colors">
-            Return to main page
+            Return to ministry page
           </Link>
         </p>
       </div>
@@ -117,22 +131,27 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
 }
 
 function AdminDashboard({ onLogout }: { onLogout: () => void }) {
-  const { dropInfo, updateDropInfo, publishList } = useApp();
-  const [localDropInfo, setLocalDropInfo] = useState<DropInfo>({ ...dropInfo });
+  const { months, publishMonth, resetMonthToAvailable } = useApp();
+  const [selectedId, setSelectedId] = useState(YEAR_PLAN[0].id);
+  const [dropLocation, setDropLocation] = useState("");
+  const [dropDate, setDropDate] = useState("");
+  const [schedule, setSchedule] = useState("");
   const [rows, setRows] = useState<Row[]>(makeEmptyRows());
-  const [published, setPublished] = useState(false);
-  const [dropSaved, setDropSaved] = useState(false);
+  const [publishedFlash, setPublishedFlash] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setLocalDropInfo({ ...dropInfo });
-  }, [dropInfo]);
+  const selected = months[selectedId];
 
-  const handleCellKeyDown = (
-    e: KeyboardEvent<HTMLInputElement>,
-    rowIdx: number,
-    colIdx: number
-  ) => {
+  useEffect(() => {
+    const m = months[selectedId];
+    if (!m) return;
+    setDropLocation(m.dropLocation);
+    setDropDate(m.dropDate);
+    setSchedule(m.schedule);
+    setRows(rowsFromItems(m.items.length ? m.items : []));
+  }, [selectedId, months]);
+
+  const handleCellKeyDown = (e: KeyboardEvent<HTMLInputElement>, rowIdx: number, colIdx: number) => {
     if (e.key === "Tab") {
       e.preventDefault();
       const totalCols = 2;
@@ -144,234 +163,290 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         nextRow = rowIdx + 1;
         if (nextRow >= totalRows) nextRow = 0;
       }
-      const inputs = tableRef.current?.querySelectorAll<HTMLInputElement>(
-        `input[data-row][data-col]`
+      const inputs = tableRef.current?.querySelectorAll<HTMLInputElement>("input[data-item-row][data-item-col]");
+      const target = Array.from(inputs ?? []).find(
+        (el) => el.dataset.itemRow === String(nextRow) && el.dataset.itemCol === String(nextCol)
       );
-      if (inputs) {
-        const target = Array.from(inputs).find(
-          (el) =>
-            el.dataset.row === String(nextRow) &&
-            el.dataset.col === String(nextCol)
+      target?.focus();
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const next = rowIdx + 1;
+      if (next < ROWS) {
+        const inputs = tableRef.current?.querySelectorAll<HTMLInputElement>(
+          `input[data-item-row="${next}"][data-item-col="0"]`
         );
-        target?.focus();
+        inputs?.[0]?.focus();
       }
     }
   };
 
   const updateRow = (idx: number, field: keyof Row, value: string) => {
     setRows((prev) => {
-      const updated = [...prev];
-      updated[idx] = { ...updated[idx], [field]: value };
-      return updated;
+      const next = [...prev];
+      next[idx] = { ...next[idx], [field]: value };
+      return next;
     });
-    if (published) setPublished(false);
   };
 
-  const handleSaveDropInfo = () => {
-    updateDropInfo(localDropInfo);
-    setDropSaved(true);
-    setTimeout(() => setDropSaved(false), 2000);
-  };
-
-  const handlePublish = () => {
-    const validItems = rows
-      .filter((r) => r.itemName.trim() !== "")
-      .map((r) => ({
-        itemName: r.itemName.trim(),
-        quantity: Math.max(1, parseInt(r.quantity) || 1),
-      }));
-
-    if (validItems.length === 0) {
-      alert("Please enter at least one item before publishing.");
+  const handleSavePublish = () => {
+    const itemPayload: SupplyLineItem[] = rows.map((r) => ({
+      name: r.name.trim(),
+      quantity: r.quantity.trim(),
+    }));
+    const hasItem = itemPayload.some((r) => r.name.length > 0);
+    if (!hasItem) {
+      alert("Add at least one item name before saving.");
       return;
     }
-
-    updateDropInfo(localDropInfo);
-    publishList(validItems);
-    setPublished(true);
-    setRows(makeEmptyRows());
+    if (!dropLocation.trim() || !dropDate.trim() || !schedule.trim()) {
+      alert("Please fill in drop location, date, and schedule.");
+      return;
+    }
+    publishMonth(selectedId, {
+      items: itemPayload,
+      dropLocation: dropLocation.trim(),
+      dropDate: dropDate.trim(),
+      schedule: schedule.trim(),
+    });
+    setPublishedFlash(true);
+    setTimeout(() => setPublishedFlash(false), 4000);
   };
 
-  const filledCount = rows.filter((r) => r.itemName.trim() !== "").length;
+  const handleReset = () => {
+    if (!selected) return;
+    if (selected.status === "Draft" || selected.status === "Available") {
+      alert("This month is not assigned to a group.");
+      return;
+    }
+    if (
+      !window.confirm(
+        "Reset this month to Available? The current group assignment and PIN will be cleared. They can sign up again from the public page."
+      )
+    ) {
+      return;
+    }
+    resetMonthToAvailable(selectedId);
+  };
+
+  const fillSample = () => {
+    const r = makeEmptyRows();
+    SAMPLE_ITEM_TEMPLATES.forEach((name, i) => {
+      if (i < ROWS) r[i] = { name, quantity: "1" };
+    });
+    setRows(r);
+  };
+
+  const filledCount = rows.filter((r) => r.name.trim() !== "").length;
+  const claimLabel =
+    selected && selected.cellGroup.trim()
+      ? `${selected.cellGroup} (PIN set)`
+      : "—";
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="sticky top-0 z-40 bg-card/90 backdrop-blur-md border-b border-border/60">
-        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <KWCALogo size={36} />
-            <div>
-              <h1 className="text-base font-bold text-foreground leading-tight">Admin Dashboard</h1>
-              <p className="text-xs text-muted-foreground leading-tight">KWCA Supply Manager</p>
+        <div className="max-w-5xl mx-auto px-4 h-[4.25rem] flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <MinistryLogo size={36} />
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-[15px] font-serif font-semibold text-foreground leading-tight truncate tracking-wide">
+                {BRAND_MAIN}
+              </h1>
+              <p className="font-serif text-[10px] sm:text-[11px] text-muted-foreground leading-snug line-clamp-2 italic">
+                {BRAND_AFFILIATION}
+              </p>
+              <p className="text-[10px] font-semibold text-primary/90 truncate pt-0.5">Admin · Monthly packages</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 shrink-0">
             <Link
               href="/"
-              className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-muted"
+              className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-lg hover:bg-muted"
             >
-              View Public Page
+              Public page
             </Link>
             <button
+              type="button"
               onClick={onLogout}
-              className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-muted border border-border"
+              className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-lg hover:bg-muted border border-border"
             >
-              Log Out
+              Log out
             </button>
           </div>
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-        {/* Drop Info Section */}
-        <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-border/60 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-foreground">Drop Information</h2>
-              <p className="text-xs text-muted-foreground">Set this month's drop location and schedule</p>
-            </div>
+        <div className="relative overflow-hidden rounded-2xl border-2 border-orange-400/45 bg-gradient-to-br from-orange-600 via-primary to-amber-400 text-white shadow-xl shadow-orange-950/15 ring-1 ring-white/15 px-6 py-7 md:px-8 md:py-9">
+          <div className="absolute top-0 right-0 w-56 h-56 rounded-full bg-white/12 -translate-y-1/3 translate-x-1/4" />
+          <div className="relative space-y-3 max-w-2xl">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold tracking-tight [text-shadow:0_2px_20px_rgba(0,0,0,0.18)] leading-tight">
+              {BRAND_MAIN}
+            </h2>
+            <p className="font-serif text-base sm:text-lg text-white/95 font-medium tracking-wide leading-snug italic">
+              {BRAND_AFFILIATION}
+            </p>
+            <p className="text-white/90 text-sm leading-relaxed border-l-4 border-white/35 pl-3 pt-1">
+              Package editor — choose a month, enter drop-off details and all 20 supply lines, then save &amp; publish
+              to the roadmap.
+            </p>
+          </div>
+        </div>
+
+        <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden p-6 space-y-6">
+          <div className="space-y-2">
+            <Label className="text-base font-semibold">1 · Select month</Label>
+            <p className="text-xs text-muted-foreground">Pick which month to edit or publish.</p>
+            <Select value={selectedId} onValueChange={setSelectedId}>
+              <SelectTrigger className="w-full h-12 text-base border-2">
+                <SelectValue placeholder="Choose month" />
+              </SelectTrigger>
+              <SelectContent>
+                {YEAR_PLAN.map(({ id, label }) => (
+                  <SelectItem key={id} value={id}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="p-6 grid md:grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Drop Location
-              </label>
-              <input
-                type="text"
-                value={localDropInfo.dropLocation}
-                onChange={(e) => setLocalDropInfo((p) => ({ ...p, dropLocation: e.target.value }))}
+          {selected && (
+            <div className="rounded-xl border-2 border-amber-200/80 bg-amber-50/50 p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-amber-900/80">Assignment</p>
+                  <p className="text-sm text-foreground mt-1">
+                    <span className="font-medium">Status:</span>{" "}
+                    <Badge variant="secondary" className="ml-1 font-semibold">
+                      {selected.status}
+                    </Badge>
+                  </p>
+                  <p className="text-sm mt-1">
+                    <span className="font-medium text-foreground">Claimed by:</span>{" "}
+                    <span className="text-muted-foreground">{claimLabel}</span>
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-destructive/40 text-destructive hover:bg-destructive/10"
+                  onClick={handleReset}
+                  disabled={selected.status === "Draft" || selected.status === "Available"}
+                >
+                  Reset to Available
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Use reset if a group cancels. The month becomes open again on the public roadmap (progress and PIN
+                cleared).
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-1">
+            <Label className="text-base font-semibold">2 · Drop-off details</Label>
+            <p className="text-xs text-muted-foreground pb-2">Location, date, and time window.</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="loc">Location</Label>
+              <Input
+                id="loc"
+                value={dropLocation}
+                onChange={(e) => setDropLocation(e.target.value)}
                 placeholder="e.g. Grace Fellowship Hall, Room 201"
-                className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                className="border-2"
               />
             </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Drop Date
-              </label>
-              <input
-                type="text"
-                value={localDropInfo.dropDate}
-                onChange={(e) => setLocalDropInfo((p) => ({ ...p, dropDate: e.target.value }))}
-                placeholder="e.g. April 19, 2026"
-                className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+            <div className="space-y-2">
+              <Label htmlFor="dt">Date</Label>
+              <Input
+                id="dt"
+                value={dropDate}
+                onChange={(e) => setDropDate(e.target.value)}
+                placeholder="e.g. Saturday, May 16, 2026"
+                className="border-2"
               />
             </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Schedule
-              </label>
-              <input
-                type="text"
-                value={localDropInfo.dropSchedule}
-                onChange={(e) => setLocalDropInfo((p) => ({ ...p, dropSchedule: e.target.value }))}
+            <div className="space-y-2">
+              <Label htmlFor="sch">Time schedule</Label>
+              <Input
+                id="sch"
+                value={schedule}
+                onChange={(e) => setSchedule(e.target.value)}
                 placeholder="e.g. Saturday 10:00 AM – 12:00 PM"
-                className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                className="border-2"
               />
             </div>
-          </div>
-
-          <div className="px-6 pb-5">
-            <button
-              onClick={handleSaveDropInfo}
-              className="h-9 px-5 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-90 transition-all border border-border/60"
-            >
-              {dropSaved ? (
-                <span className="flex items-center gap-2 text-green-700">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Saved!
-                </span>
-              ) : (
-                "Save Drop Info"
-              )}
-            </button>
           </div>
         </section>
 
-        {/* Batch Input Table */}
         <section className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-border/60 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-foreground">Batch Item Entry</h2>
-                <p className="text-xs text-muted-foreground">
-                  Use Tab key to navigate between fields. {filledCount > 0 && `${filledCount} item${filledCount !== 1 ? "s" : ""} entered.`}
-                </p>
-              </div>
+          <div className="px-6 py-4 border-b border-border/60 bg-muted/20 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">3 · Supply list (20 rows)</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Excel-style entry · {filledCount} rows with item names · Tab moves across cells
+              </p>
             </div>
-            <button
-              onClick={() => setRows(makeEmptyRows())}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Clear All
-            </button>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => setRows(makeEmptyRows())}>
+                Clear all
+              </Button>
+              <Button type="button" variant="secondary" size="sm" onClick={fillSample}>
+                Fill sample
+              </Button>
+            </div>
           </div>
 
           <div className="overflow-x-auto" ref={tableRef}>
-            <table className="w-full min-w-[480px]">
+            <table className="w-full min-w-[520px] text-sm border-collapse">
               <thead>
-                <tr className="bg-muted/40">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide w-12">
+                <tr className="bg-muted/50 border-b-2 border-border">
+                  <th className="text-left px-3 py-3 text-xs font-bold text-foreground w-12 border-r border-border/60">
                     #
                   </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    Item Name
+                  <th className="text-left px-3 py-3 text-xs font-bold text-foreground border-r border-border/60">
+                    Item name
                   </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide w-32">
-                    Quantity
-                  </th>
+                  <th className="text-left px-3 py-3 text-xs font-bold text-foreground w-28">Qty</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/40">
+              <tbody>
                 {rows.map((row, idx) => (
                   <tr
                     key={idx}
-                    className={`transition-colors ${
-                      row.itemName ? "bg-primary/[0.02]" : "hover:bg-muted/30"
+                    className={`border-b border-border/50 ${idx % 2 === 0 ? "bg-background" : "bg-muted/15"} ${
+                      row.name.trim() ? "bg-primary/[0.03]" : ""
                     }`}
                   >
-                    <td className="px-4 py-2 text-xs text-muted-foreground font-mono">
+                    <td className="px-3 py-1.5 text-xs font-mono text-muted-foreground align-middle border-r border-border/40">
                       {String(idx + 1).padStart(2, "0")}
                     </td>
-                    <td className="px-2 py-2">
+                    <td className="px-2 py-1 border-r border-border/40">
                       <input
-                        data-row={idx}
-                        data-col={0}
+                        data-item-row={idx}
+                        data-item-col={0}
                         type="text"
-                        value={row.itemName}
-                        onChange={(e) => updateRow(idx, "itemName", e.target.value)}
+                        value={row.name}
+                        onChange={(e) => updateRow(idx, "name", e.target.value)}
                         onKeyDown={(e) => handleCellKeyDown(e, idx, 0)}
-                        placeholder={idx === 0 ? "e.g. Rice (5 kg bag)" : ""}
-                        className="w-full h-9 px-3 rounded-md border border-transparent bg-transparent text-sm focus:bg-background focus:border-input focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-muted-foreground/40"
+                        placeholder={idx === 0 ? "e.g. Rice 5kg" : ""}
+                        className="w-full h-9 px-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/35"
                       />
                     </td>
-                    <td className="px-2 py-2">
+                    <td className="px-2 py-1">
                       <input
-                        data-row={idx}
-                        data-col={1}
-                        type="number"
-                        min={1}
+                        data-item-row={idx}
+                        data-item-col={1}
+                        type="text"
                         value={row.quantity}
                         onChange={(e) => updateRow(idx, "quantity", e.target.value)}
                         onKeyDown={(e) => handleCellKeyDown(e, idx, 1)}
                         placeholder="1"
-                        className="w-full h-9 px-3 rounded-md border border-transparent bg-transparent text-sm focus:bg-background focus:border-input focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-muted-foreground/40"
+                        className="w-full h-9 px-2 rounded-md border border-input bg-background text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/35"
                       />
                     </td>
                   </tr>
@@ -381,29 +456,26 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           </div>
         </section>
 
-        {/* Publish Button */}
-        <div className="flex flex-col items-center gap-3 py-4">
-          {published && (
-            <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-xl px-5 py-3 text-sm font-medium">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="flex flex-col items-center gap-4 py-2 pb-12">
+          {publishedFlash && (
+            <div className="flex items-center gap-2 bg-emerald-50 border-2 border-emerald-200 text-emerald-900 rounded-xl px-5 py-3 text-sm font-medium max-w-lg text-center">
+              <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
               </svg>
-              List published successfully! The public page has been updated.
+              Saved & published. This month&apos;s package and drop-off info are live on the public roadmap (mock data).
             </div>
           )}
-          <button
-            onClick={handlePublish}
-            className="relative group h-14 px-10 rounded-2xl bg-gradient-to-r from-primary to-orange-500 text-white font-bold text-base shadow-lg hover:shadow-xl hover:opacity-95 active:scale-[0.98] transition-all"
+          <Button
+            type="button"
+            size="lg"
+            className="h-14 px-12 rounded-2xl bg-gradient-to-r from-primary to-orange-500 text-white font-bold text-base shadow-lg hover:opacity-95 border-0"
+            onClick={handleSavePublish}
           >
-            <span className="flex items-center gap-3">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
-              <span>Publish &nbsp;·&nbsp; 이번 달 리스트 게시하기</span>
-            </span>
-          </button>
-          <p className="text-xs text-muted-foreground text-center max-w-sm">
-            Publishing will replace the current item list with the entries above. This action updates the public page immediately.
+            Save &amp; Publish
+          </Button>
+          <p className="text-xs text-muted-foreground text-center max-w-lg leading-relaxed">
+            Draft months become <span className="font-medium text-foreground">Available</span>. Assigned months keep
+            their group unless you use Reset.
           </p>
         </div>
       </main>

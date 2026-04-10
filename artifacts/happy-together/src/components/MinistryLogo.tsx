@@ -1,4 +1,5 @@
-export function KWCALogo({ size = 48 }: { size?: number }) {
+/** Warm floral mark — Happytogether Ministry */
+export function MinistryLogo({ size = 48 }: { size?: number }) {
   return (
     <svg
       width={size}
@@ -6,11 +7,10 @@ export function KWCALogo({ size = 48 }: { size?: number }) {
       viewBox="0 0 48 48"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      aria-label="KWCA Logo"
+      aria-label="Happytogether Ministry by Toronto Youngnak Presbyterian Church"
     >
       <circle cx="24" cy="24" r="24" fill="hsl(22, 85%, 57%)" />
       <circle cx="24" cy="24" r="20" fill="hsl(22, 85%, 57%)" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
-      {/* Stylized flower / hibiscus motif */}
       <g transform="translate(24,24)">
         <ellipse cx="0" cy="-8" rx="3.5" ry="6" fill="rgba(255,255,255,0.90)" transform="rotate(0)" />
         <ellipse cx="0" cy="-8" rx="3.5" ry="6" fill="rgba(255,255,255,0.90)" transform="rotate(72)" />

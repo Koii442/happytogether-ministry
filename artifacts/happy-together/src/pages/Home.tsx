@@ -1,169 +1,270 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { SupplyItem } from "@/data/mockData";
-import { KWCALogo } from "@/components/KWCALogo";
+import {
+  MonthPackage,
+  SUPPLY_LIST_SLOT_COUNT,
+  YEAR_PLAN,
+  buildRollingMonthIds,
+  countSupplyItems,
+  findAdminAnchorMonthId,
+  getCardStepperSummary,
+  getProgressStepLevel,
+  isCalendarMonthFullyPast,
+} from "@/data/mockData";
+import { MinistryLogo } from "@/components/MinistryLogo";
 import { StatusBadge } from "@/components/StatusBadge";
+import { CardDeliveryStepper, type StepperTone } from "@/components/CardDeliveryStepper";
 import { ClaimModal } from "@/components/ClaimModal";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { BRAND_AFFILIATION, BRAND_MAIN } from "@/lib/branding";
 
-function DropInfoCard() {
-  const { dropInfo, items } = useApp();
-  const available = items.filter((i) => i.status === "Available").length;
-  const claimed = items.filter((i) => i.status === "Claimed").length;
-  const completed = items.filter((i) => i.status === "Completed").length;
+const ITEMS_PENDING_NOTE = "Items will be updated soon.";
 
+function monthToStepperTone(status: MonthPackage["status"]): StepperTone {
+  if (status === "Draft" || status === "Available") return "open";
+  if (status === "Reserved") return "reserved";
+  if (status === "Ready") return "ready";
+  return "completed";
+}
+
+function SupplyListRows({ month }: { month: MonthPackage }) {
+  const hasNamed = countSupplyItems(month) > 0;
+  const rows = Array.from({ length: SUPPLY_LIST_SLOT_COUNT }, (_, i) => month.items[i] ?? { name: "", quantity: "" });
   return (
-    <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary via-orange-500 to-amber-500 text-white shadow-lg">
-      {/* Decorative circles */}
-      <div className="absolute top-0 right-0 w-48 h-48 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/3" />
-      <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full bg-black/10 translate-y-1/2 -translate-x-1/4" />
-
-      <div className="relative p-6 md:p-8">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-white/70 text-xs font-medium uppercase tracking-widest">This Month's Drop</span>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-4 mt-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <span className="text-white/70 text-xs uppercase tracking-wide font-medium">Location</span>
-            </div>
-            <p className="text-white font-semibold text-sm leading-tight">{dropInfo.dropLocation}</p>
-          </div>
-
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span className="text-white/70 text-xs uppercase tracking-wide font-medium">Date</span>
-            </div>
-            <p className="text-white font-semibold text-sm">{dropInfo.dropDate}</p>
-          </div>
-
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="text-white/70 text-xs uppercase tracking-wide font-medium">Schedule</span>
-            </div>
-            <p className="text-white font-semibold text-sm">{dropInfo.dropSchedule}</p>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="mt-6 pt-4 border-t border-white/20 flex gap-6">
-          <div className="text-center">
-            <p className="text-2xl font-bold text-white">{available}</p>
-            <p className="text-white/70 text-xs mt-0.5">Available</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-white">{claimed}</p>
-            <p className="text-white/70 text-xs mt-0.5">Claimed</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-white">{completed}</p>
-            <p className="text-white/70 text-xs mt-0.5">Completed</p>
-          </div>
-        </div>
-      </div>
-    </div>
+    <>
+      {!hasNamed && (
+        <p className="text-sm text-muted-foreground px-3 py-2.5 border-b border-border/60 bg-muted/25 leading-relaxed">
+          {ITEMS_PENDING_NOTE}
+        </p>
+      )}
+      <ul className="max-h-56 overflow-y-auto text-sm divide-y divide-border/50">
+        {rows.map((line, i) => (
+          <li
+            key={i}
+            className={`flex flex-wrap gap-x-3 gap-y-1 px-3 py-2.5 ${
+              i % 2 === 0 ? "bg-background/50" : "bg-muted/25"
+            } ${month.status === "Completed" ? "opacity-80" : ""}`}
+          >
+            <span className="font-mono text-xs font-bold text-muted-foreground w-7 shrink-0 pt-0.5">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <span
+              className={`flex-1 min-w-[120px] font-medium leading-snug ${
+                month.status === "Completed" && line.name.trim()
+                  ? "line-through text-muted-foreground"
+                  : line.name.trim()
+                    ? "text-foreground"
+                    : "text-muted-foreground/70"
+              }`}
+            >
+              {line.name.trim() ? line.name : "—"}
+            </span>
+            {line.quantity && line.name.trim() ? (
+              <span className="text-xs font-semibold text-muted-foreground tabular-nums shrink-0">
+                × {line.quantity}
+              </span>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 
-function ItemCard({
-  item,
-  onClaim,
+function MonthCard({
+  month,
+  onOpen,
+  roadmapStep,
+  roadmapTotal,
 }: {
-  item: SupplyItem;
-  onClaim: (item: SupplyItem) => void;
+  month: MonthPackage;
+  onOpen: (m: MonthPackage) => void;
+  roadmapStep?: number;
+  roadmapTotal?: number;
 }) {
-  const isCompleted = item.status === "Completed";
-  const isClaimed = item.status === "Claimed";
+  const isOpen = month.status === "Draft" || month.status === "Available";
+  const stepLevel = getProgressStepLevel(month.status);
+  const stepperSummary = getCardStepperSummary(month);
+  const stepperTone = monthToStepperTone(month.status);
+
+  const [supplyOpen, setSupplyOpen] = useState(false);
+
+  const cardVisual =
+    month.status === "Reserved"
+      ? "border-amber-400/90 bg-gradient-to-b from-amber-50 to-amber-100/50 shadow-md ring-2 ring-amber-200/70"
+      : month.status === "Ready"
+        ? "border-teal-300/85 bg-gradient-to-b from-teal-50/55 to-card ring-1 ring-teal-200/65"
+        : month.status === "Completed"
+          ? "border-emerald-300/80 bg-gradient-to-b from-emerald-50/50 to-muted/20 opacity-95"
+          : isOpen
+            ? "border-neutral-300/75 bg-neutral-50/40 hover:bg-neutral-50/70 hover:shadow-md ring-1 ring-neutral-200/70"
+            : "border-border bg-card";
 
   return (
-    <div
-      className={`bg-card border rounded-xl p-4 flex items-center gap-4 transition-all duration-200 hover:shadow-md group ${
-        isCompleted ? "opacity-60" : "hover:-translate-y-0.5"
-      }`}
+    <Card
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(month)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen(month);
+        }
+      }}
+      className={`flex flex-col overflow-hidden transition-all duration-200 cursor-pointer text-left outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+        isOpen ? "focus-visible:ring-neutral-400/70" : "focus-visible:ring-primary"
+      } ${cardVisual}`}
     >
-      {/* Icon */}
-      <div
-        className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-          isCompleted
-            ? "bg-gray-100"
-            : isClaimed
-            ? "bg-amber-50"
-            : "bg-blue-50"
-        }`}
-      >
-        <svg
-          className={`w-5 h-5 ${
-            isCompleted ? "text-gray-400" : isClaimed ? "text-amber-500" : "text-blue-500"
-          }`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-          />
-        </svg>
-      </div>
+      <CardHeader className="pb-3 space-y-3">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="space-y-1 min-w-0">
+            {roadmapStep != null && roadmapTotal != null && (
+              <p
+                className={`text-[10px] font-bold uppercase tracking-widest ${
+                  isOpen ? "text-neutral-500" : "text-primary/90"
+                }`}
+              >
+                Roadmap {String(roadmapStep).padStart(2, "0")} / {String(roadmapTotal).padStart(2, "0")}
+              </p>
+            )}
+            <h3 className="text-lg font-bold tracking-tight text-foreground">{month.label}</h3>
+          </div>
+          <StatusBadge status={month.status} />
+        </div>
 
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <p
-          className={`font-semibold text-sm leading-tight truncate ${
-            isCompleted ? "line-through text-muted-foreground" : "text-foreground"
-          }`}
-        >
-          {item.itemName}
-        </p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Qty: {item.quantity}
-          {item.cellGroup && ` · ${item.cellGroup}`}
-        </p>
-      </div>
+        <CardDeliveryStepper step={stepLevel} summary={stepperSummary} tone={stepperTone} />
 
-      {/* Status & Action */}
-      <div className="flex items-center gap-3 flex-shrink-0">
-        <StatusBadge status={item.status} />
-        {item.status === "Available" && (
-          <button
-            onClick={() => onClaim(item)}
-            className="h-8 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 active:scale-[0.97] transition-all shadow-sm"
-          >
-            Claim
-          </button>
+        {isOpen && (
+          <div className="rounded-lg border border-border/80 bg-muted/35 p-3 space-y-2 text-xs">
+            <div className="flex gap-2">
+              <span className="font-semibold text-neutral-700 shrink-0 w-20">Drop-off</span>
+              <span className="text-muted-foreground">{month.dropDate || "—"}</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="font-semibold text-neutral-700 shrink-0 w-20">Location</span>
+              <span className="text-muted-foreground leading-snug">{month.dropLocation || "—"}</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="font-semibold text-neutral-700 shrink-0 w-20">Schedule</span>
+              <span className="text-muted-foreground">{month.schedule || "—"}</span>
+            </div>
+          </div>
         )}
-      </div>
-    </div>
+      </CardHeader>
+
+      <CardContent className="flex-1 pt-0 space-y-3">
+        <div
+          className="rounded-xl border-2 border-foreground/10 bg-card shadow-inner overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          <Collapsible open={supplyOpen} onOpenChange={setSupplyOpen}>
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                aria-expanded={supplyOpen}
+                className="w-full px-3 py-2.5 bg-foreground/[0.04] border-b-2 border-border/60 flex items-center justify-between gap-2 text-left hover:bg-foreground/[0.07] transition-colors cursor-pointer"
+              >
+                <div className="flex flex-wrap items-center gap-2 min-w-0">
+                  <span className="text-xs font-bold uppercase tracking-wide text-foreground">
+                    Supply list
+                  </span>
+                  <span className="text-xs font-mono font-bold text-muted-foreground bg-background px-2 py-0.5 rounded-md border border-border">
+                    ({SUPPLY_LIST_SLOT_COUNT} items)
+                  </span>
+                </div>
+                <span className="flex items-center gap-1.5 shrink-0 text-xs font-semibold text-neutral-600">
+                  <span className="text-muted-foreground">{supplyOpen ? "Hide" : "Show"}</span>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 shrink-0 text-neutral-600 transition-transform duration-300 ease-out",
+                      supplyOpen && "rotate-180"
+                    )}
+                    aria-hidden
+                  />
+                </span>
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent
+              forceMount
+              className={cn(
+                "grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none",
+                "data-[state=closed]:grid-rows-[0fr] data-[state=open]:grid-rows-[1fr]"
+              )}
+            >
+              <div className="min-h-0 overflow-hidden">
+                <SupplyListRows month={month} />
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+
+        {isOpen && (
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full h-11 text-sm font-semibold border border-neutral-400/50 bg-neutral-200/80 text-neutral-900 hover:bg-neutral-300/90 shadow-sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpen(month);
+            }}
+          >
+            Claim this month
+          </Button>
+        )}
+      </CardContent>
+
+      <CardFooter className="pt-1 pb-4 border-t border-border/40">
+        <p className="text-xs font-semibold text-center w-full text-muted-foreground">
+          {isOpen && "Tap Claim this month or the card · 예약하기"}
+          {month.status === "Reserved" && "Tap card to update status (PIN required)"}
+          {month.status === "Ready" && "Tap card to mark complete when finished"}
+          {month.status === "Completed" && "Tap card to view progress history"}
+        </p>
+      </CardFooter>
+    </Card>
   );
 }
 
 export default function Home() {
-  const { items } = useApp();
-  const [selectedItem, setSelectedItem] = useState<SupplyItem | null>(null);
+  const { months } = useApp();
+  const [activeMonth, setActiveMonth] = useState<MonthPackage | null>(null);
+
+  const roadmap = useMemo(() => {
+    const anchorId = findAdminAnchorMonthId(months);
+    const rolling = buildRollingMonthIds(anchorId);
+    const now = new Date();
+    const visible = rolling.filter((id) => !isCalendarMonthFullyPast(id, now));
+    const anchorLabel = YEAR_PLAN.find((x) => x.id === anchorId)?.label ?? anchorId;
+    return {
+      anchorId,
+      anchorLabel,
+      visibleIds: visible,
+      pastHidden: rolling.length - visible.length,
+    };
+  }, [months]);
+
+  const visibleCount = roadmap.visibleIds.length;
+  const publishedInView = roadmap.visibleIds.filter((id) => months[id]?.status !== "Draft").length;
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="sticky top-0 z-40 bg-card/90 backdrop-blur-md border-b border-border/60">
-        <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <KWCALogo size={36} />
-            <div>
-              <h1 className="text-base font-bold text-foreground leading-tight">KWCA</h1>
-              <p className="text-xs text-muted-foreground leading-tight">Korean Women's Association</p>
+            <MinistryLogo size={36} />
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-[15px] font-serif font-semibold text-foreground leading-tight tracking-wide">
+                {BRAND_MAIN}
+              </h1>
+              <p className="font-serif text-[11px] sm:text-xs text-muted-foreground leading-snug mt-0.5">
+                {BRAND_AFFILIATION}
+              </p>
             </div>
           </div>
           <Link
@@ -175,68 +276,96 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-8 space-y-8">
-        {/* Welcome */}
-        <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-foreground">
-            Mission Facility Supplies
-          </h2>
-          <p className="text-muted-foreground text-sm">
-            Browse available items and claim what your cell group needs. Items are distributed monthly.
-          </p>
-        </div>
-
-        {/* Drop Info Card */}
-        <DropInfoCard />
-
-        {/* Item List */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-semibold text-foreground">
-              Supply Items
-            </h3>
-            <span className="text-xs text-muted-foreground">
-              {items.length} items total
-            </span>
-          </div>
-
-          {items.length === 0 ? (
-            <div className="text-center py-16 space-y-3">
-              <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto">
-                <svg className="w-8 h-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                </svg>
+      <main className="max-w-6xl mx-auto px-4 py-10 space-y-10">
+        <div className="relative overflow-hidden rounded-2xl border border-border/90 bg-gradient-to-br from-neutral-50 via-white to-stone-50/70 text-foreground shadow-sm">
+          <div className="absolute top-0 right-0 w-[28rem] h-[28rem] rounded-full bg-neutral-200/20 -translate-y-1/2 translate-x-1/4 blur-3xl pointer-events-none" />
+          <div className="relative p-8 md:p-11 space-y-5">
+            <div className="space-y-2 md:space-y-3 max-w-4xl">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-serif font-semibold tracking-tight text-neutral-900 leading-[1.08]">
+                {BRAND_MAIN}
+              </h2>
+              <p className="font-serif text-base sm:text-lg md:text-xl text-neutral-600 font-medium tracking-[0.02em] leading-snug">
+                {BRAND_AFFILIATION}
+              </p>
+            </div>
+            <p className="text-neutral-700 text-base md:text-lg font-normal max-w-3xl leading-relaxed border-l-4 border-neutral-300 pl-4 pt-1">
+              Monthly sponsorship roadmap — one cell group serves the full package each month. Browse the calendar,
+              reserve an open month, and track Reserved → Prepared → Completed.
+            </p>
+            <p className="text-neutral-600 text-sm md:text-base max-w-2xl leading-relaxed">
+              The timeline starts at{" "}
+              <span className="font-semibold text-neutral-900">{roadmap.anchorLabel}</span> (most recently updated).
+              Past months are hidden automatically.
+            </p>
+            <div className="flex flex-wrap gap-8 pt-1 text-sm">
+              <div>
+                <p className="text-3xl font-semibold tabular-nums text-neutral-900">{visibleCount}</p>
+                <p className="text-neutral-500 text-xs font-medium">Months in view</p>
               </div>
-              <p className="text-muted-foreground text-sm">No items published yet.</p>
-              <p className="text-xs text-muted-foreground">Check back after the admin publishes this month's list.</p>
+              <div>
+                <p className="text-3xl font-semibold tabular-nums text-neutral-900">{publishedInView}</p>
+                <p className="text-neutral-500 text-xs font-medium">Published on roadmap</p>
+              </div>
+              {roadmap.pastHidden > 0 && (
+                <div>
+                  <p className="text-3xl font-semibold tabular-nums text-neutral-800">{roadmap.pastHidden}</p>
+                  <p className="text-neutral-500 text-xs font-medium">Past months archived</p>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="space-y-2">
-              {items.map((item) => (
-                <ItemCard
-                  key={item.id}
-                  item={item}
-                  onClaim={setSelectedItem}
-                />
-              ))}
-            </div>
-          )}
+          </div>
         </div>
+
+        {visibleCount === 0 ? (
+          <p className="text-center text-muted-foreground py-12">
+            Every month in the current cycle is already in the past. Check back when new months are published.
+          </p>
+        ) : (
+          <section aria-label="Monthly sponsorship timeline">
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-6 border-b border-border/60 pb-4">
+              <div>
+                <h2 className="text-xl font-bold text-foreground tracking-tight">Timeline</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  May 2026 → April 2027 cycle · chronological · anchored at {roadmap.anchorLabel}
+                </p>
+              </div>
+            </div>
+
+            <ol className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-10 list-none p-0 m-0">
+              {roadmap.visibleIds.map((id, i) => {
+                const m = months[id];
+                if (!m) return null;
+                const step = i + 1;
+                const total = roadmap.visibleIds.length;
+                return (
+                  <li
+                    key={id}
+                    className="relative min-w-0 pl-3 md:pl-0 border-l-2 md:border-l-0 border-neutral-200/90 md:border-0"
+                  >
+                    <MonthCard
+                      month={m}
+                      onOpen={setActiveMonth}
+                      roadmapStep={step}
+                      roadmapTotal={total}
+                    />
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+        )}
       </main>
 
-      {/* Claim Modal */}
-      {selectedItem && (
-        <ClaimModal
-          item={selectedItem}
-          onClose={() => setSelectedItem(null)}
-        />
-      )}
+      {activeMonth && <ClaimModal month={activeMonth} onClose={() => setActiveMonth(null)} />}
 
-      {/* Footer */}
       <footer className="mt-16 py-8 border-t border-border/50">
-        <div className="max-w-3xl mx-auto px-4 text-center">
+        <div className="max-w-6xl mx-auto px-4 text-center">
           <p className="text-xs text-muted-foreground">
-            Korean Women's Association (KWCA) · Mission Facility Supply Manager
+            <span className="font-semibold text-foreground/90">{BRAND_MAIN}</span>
+            <span className="mx-1.5">·</span>
+            <span className="font-serif text-[13px]">{BRAND_AFFILIATION}</span>
+            <span className="mx-1.5">·</span>
+            Monthly sponsorship
           </p>
         </div>
       </footer>

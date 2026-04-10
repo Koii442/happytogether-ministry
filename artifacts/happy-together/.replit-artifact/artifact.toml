@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "Happy Together — KWCA Supply Manager"
+title = "Happytogether Ministry (by Toronto Youngnak Presbyterian Church)"
 version = "1.0.0"
 id = "artifacts/happy-together"
 router = "path"
