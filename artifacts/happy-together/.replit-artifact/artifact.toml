@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Happy Together — KWCA Supply Manager"
+version = "1.0.0"
+id = "artifacts/happy-together"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21847
+
+[services.development]
+run = "pnpm --filter @workspace/happy-together run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/happy-together", "run", "build" ]
+publicDir = "artifacts/happy-together/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21847"
+BASE_PATH = "/"

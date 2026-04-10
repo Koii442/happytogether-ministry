@@ -25,3 +25,23 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `pnpm --filter @workspace/api-server run dev` — run API server locally
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+
+## Artifacts
+
+### Happy Together — KWCA Supply Manager (`artifacts/happy-together`)
+
+- **Type**: React + Vite (frontend-only, mock data)
+- **Preview path**: `/`
+- **Tech**: React, Tailwind CSS, Wouter routing, React Query
+- **Data**: All data is local state (mock) — no backend or DB used yet
+- **Pages**:
+  - `/` — Main public page: KWCA header, drop info card, item list with claim modal
+  - `/admin` — Admin login (ID: `happy123` / PW: `together123`), drop info editor, batch item entry table with Tab navigation, publish button
+- **Design**: Warm cream/terracotta color palette, custom KWCA flower logo, polished shadcn-style components
+- **State**: Shared via React Context (`AppContext`) — claim, publish, and drop info updates all work live
+
+## Future Integration Notes (from PRD)
+
+- Replace mock data with Google Sheets API via backend routes
+- Add real PIN verification / cell group lookup via backend
+- Connect to Vercel for production deployment

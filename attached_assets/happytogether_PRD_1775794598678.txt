@@ -1,0 +1,38 @@
+"I want to build a standalone web application for KWCA (Korean Women's Association) to manage mission facility supplies. Since KWCA values aesthetics, I need a very beautifully designed, modern, and warm UI. We will deploy this on Vercel later, but first, I want to create the full-stack prototype here on Replit.
+
+Technical Stack:
+
+Use Next.js (App Router) with Tailwind CSS.
+
+Use a modern UI library style like shadcn/ui for components (clean lines, sufficient padding, nice typography). Do not use default HTML styles.
+
+For now, use Mock Data (hardcoded local state) instead of real Google Sheets. We will connect real APIs later in Cursor. Mock the data as if it came from the spreadsheet schema below.
+
+Spreadsheet Schema (for Mocking):
+ID, Month, ItemName, Quantity, Status (Available/Claimed/Completed), CellGroup, PIN, DropLocation, DropDate, DropSchedule.
+
+Requirement Details:
+
+1. Main User Page (/)
+
+Clean header with a sample KWCA logo and welcome text.
+
+Top Highlight: A stylish card component displaying mocked DropLocation, DropDate, and Schedule.
+
+Item List: Display 10-20 mocked items in a clean, scrollable vertical list. Each item should be a card showing ItemName, Quantity, and Status.
+
+Status Styling: Use clear color coding (e.g., Available = Active Blue, Claimed = Disabled Yellow, Completed = Strikethrough Gray).
+
+Claim Action: Clicking 'Available' item opens a beautiful Modal. Includes a dropdown to select one of 30 pre-defined Cell Groups (just use 'Group A' to 'Group Z' for now) and an input for a custom 4-digit PIN. Clicking 'Confirm' visually updates the item status on the UI (mock update).
+
+2. Admin Page (/admin)
+
+Protect with hardcoded login: ID happy123 / PW together 123.
+
+Form at the top for mocked DropLocation, DropDate, and Schedule.
+
+Batch Input UI: Create an Excel-like Table UI with 20 empty rows by default. Columns: Item Name, Quantity. Ensure seamless navigation using the 'Tab' key between fields for fast entry.
+
+A central [Publish / 이번 달 리스트 게시하기] button at the bottom. Clicking it clears the mock list and simulates a publish event on the UI.
+
+Please start by building the overall structure and the beautiful UI components. Focus on making it look very polished first using local mock data. We will handle the complex database integration later."
