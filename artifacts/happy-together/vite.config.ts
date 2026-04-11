@@ -3,29 +3,18 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
-
+ 
+// PORT는 빌드 타임에는 필요 없으므로 기본값 3000으로 폴백
 const rawPort = process.env.PORT;
-
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
-}
-
-const port = Number(rawPort);
-
-if (Number.isNaN(port) || port <= 0) {
+const port = rawPort ? Number(rawPort) : 3000;
+ 
+if (rawPort && (Number.isNaN(port) || port <= 0)) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
-
-const basePath = process.env.BASE_PATH;
-
-if (!basePath) {
-  throw new Error(
-    "BASE_PATH environment variable is required but was not provided.",
-  );
-}
-
+ 
+// BASE_PATH가 없을 경우 "/" 를 기본값으로 사용 (Vercel 표준 배포 경로)
+const basePath = process.env.BASE_PATH ?? "/";
+ 
 export default defineConfig({
   base: basePath,
   plugins: [
@@ -73,3 +62,4 @@ export default defineConfig({
     allowedHosts: true,
   },
 });
+ 
